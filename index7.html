@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SEO ALT IMG Checker</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
+  <style>
+    .tab-active {
+      background-color: #3b82f6;
+      color: white;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 p-8 text-gray-800">
+    <a href="index.html" class="inline-block mb-3 text-blue-600 hover:underline">⬅️ Précédent</a>
+
+  <h1 class="text-2xl font-bold mb-6">🔍 SEO ALT IMG Checker</h1>
+
+  <input id="urlInput" type="text" placeholder="Entrez l'URL d'une page..." class="border p-2 w-full max-w-xl rounded mb-4"/>
+  <button id="checkBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Vérifier les images</button>
+
+  <div id="results" class="mt-8 hidden">
+    <div class="mb-4 flex items-center justify-between">
+      <div>
+        <span id="imageCount"></span> | <span id="missingCount"></span>
+      </div>
+      <div class="flex gap-4">
+        <button id="downloadWithAlt" class="bg-green-600 text-white px-4 py-1 rounded hidden">📥 Avec ALT</button>
+        <button id="downloadWithoutAlt" class="bg-red-600 text-white px-4 py-1 rounded hidden">📥 Sans ALT</button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="mb-4 flex gap-2">
+      <button id="tabAll" class="px-4 py-2 bg-gray-200 rounded tab-active">Toutes</button>
+      <button id="tabWith" class="px-4 py-2 bg-gray-200 rounded">✅ Avec ALT</button>
+      <button id="tabMissing" class="px-4 py-2 bg-gray-200 rounded">❌ Sans ALT</button>
+    </div>
+
+    <!-- Display Containers -->
+    <div id="allImages" class="space-y-4"></div>
+    <div id="withAltImages" class="space-y-4 hidden"></div>
+    <div id="missingAltImages" class="space-y-4 hidden"></div>
+  </div>
+
+  <script>
+    const checkBtn = document.getElementById('checkBtn');
+    const urlInput = document.getElementById('urlInput');
+    const imageCountSpan = document.getElementById('imageCount');
+    const missingCountSpan = document.getElementById('missingCount');
+    const downloadWithAlt = document.getElementById('downloadWithAlt');
+    const downloadWithoutAlt = document.getElementById('downloadWithoutAlt');
+    const resultsSection = document.getElementById('results');
+
+    const tabAll = document.getElementById('tabAll');
+    const tabWith = document.getElementById('tabWith');
+    const tabMissing = document.getElementById('tabMissing');
+    const allImagesDiv = document.getElementById('allImages');
+    const withAltImagesDiv = document.getElementById('withAltImages');
+    const missingAltImagesDiv = document.getElementById('missingAltImages');
+
+    let csvData = [];
+
+    function switchTab(activeId) {
+      [tabAll, tabWith, tabMissing].forEach(btn => btn.classList.remove('tab-active'));
+      [allImagesDiv, withAltImagesDiv, missingAltImagesDiv].forEach(div => div.classList.add('hidden'));
+
+      if (activeId === 'tabAll') {
+        tabAll.classList.add('tab-active');
+        allImagesDiv.classList.remove('hidden');
+      } else if (activeId === 'tabWith') {
+        tabWith.classList.add('tab-active');
+        withAltImagesDiv.classList.remove('hidden');
+      } else {
+        tabMissing.classList.add('tab-active');
+        missingAltImagesDiv.classList.remove('hidden');
+      }
+    }
+
+    tabAll.addEventListener('click', () => switchTab('tabAll'));
+    tabWith.addEventListener('click', () => switchTab('tabWith'));
+    tabMissing.addEventListener('click', () => switchTab('tabMissing'));
+
+    checkBtn.addEventListener('click', async () => {
+      const url = urlInput.value.trim();
+      if (!url) return alert("Veuillez entrer une URL valide.");
+
+      csvData = [];
+      allImagesDiv.innerHTML = withAltImagesDiv.innerHTML = missingAltImagesDiv.innerHTML = '<p class="text-gray-500">Chargement...</p>';
+      downloadWithAlt.classList.add('hidden');
+      downloadWithoutAlt.classList.add('hidden');
+      resultsSection.classList.remove('hidden');
+      switchTab('tabAll');
+
+      try {
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        const data = await response.json();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data.contents, 'text/html');
+        const images = Array.from(doc.querySelectorAll('img'));
+
+        const filteredImages = images.filter(img => {
+          const src = img.getAttribute('src') || img.getAttribute('data-lazysizes_src') || '';
+          return !/facebook\.com\/tr|googleads\.g\.doubleclick\.net|pixel/i.test(src);
+        });
+
+        if (filteredImages.length === 0) {
+          allImagesDiv.innerHTML = '<p class="text-red-500">Aucune balise &lt;img&gt; trouvée.</p>';
+          return;
+        }
+
+        allImagesDiv.innerHTML = withAltImagesDiv.innerHTML = missingAltImagesDiv.innerHTML = '';
+        let withAlt = [], withoutAlt = [];
+
+        filteredImages.forEach((img, i) => {
+          const src = img.getAttribute('src') || img.getAttribute('data-lazysizes_src') || '[non défini]';
+          const alt = img.getAttribute('alt');
+          const altStatus = (alt === null || alt.trim() === '') ? '❌' : '✅';
+          const name = src.split('/').pop()?.split('.')[0]?.replace(/[-_]/g, ' ') || '[non défini]';
+          const preview = src.startsWith('http') ? `<img src="${src}" class="w-24 h-24 object-contain border mt-2"/>` : '';
+
+          const html = `
+            <div class="p-4 border rounded ${altStatus === '❌' ? 'border-red-300 bg-red-50' : 'border-green-300 bg-green-50'}">
+              <p><strong>${i + 1}</strong> - <span class="text-blue-600 break-all">${src}</span></p>
+              <p>Alt: <strong>${alt || '[vide]'}</strong></p>
+              <p>Nom: <em>${name}</em></p>
+              ${preview}
+            </div>
+          `;
+
+          const row = { name, src, alt: alt || '', altStatus };
+          csvData.push(row);
+
+          allImagesDiv.innerHTML += html;
+          if (altStatus === '✅') {
+            withAlt.push(row);
+            withAltImagesDiv.innerHTML += html;
+          } else {
+            withoutAlt.push(row);
+            missingAltImagesDiv.innerHTML += html;
+          }
+        });
+
+        imageCountSpan.textContent = `Images totales : ${filteredImages.length}`;
+        missingCountSpan.textContent = `Sans ALT : ${withoutAlt.length}`;
+
+        if (withAlt.length > 0) downloadWithAlt.classList.remove('hidden');
+        if (withoutAlt.length > 0) downloadWithoutAlt.classList.remove('hidden');
+
+        // Téléchargements CSV
+        downloadWithAlt.onclick = () => exportCSV(withAlt, 'images_avec_alt.csv');
+        downloadWithoutAlt.onclick = () => exportCSV(withoutAlt, 'images_sans_alt.csv');
+
+      } catch (error) {
+        allImagesDiv.innerHTML = `<p class="text-red-500">Erreur : ${error.message}</p>`;
+      }
+    });
+
+    function exportCSV(data, filename) {
+      const rows = [['Nom image', 'Image src', 'ALT value', 'Status']];
+      data.forEach(row => {
+        rows.push([row.name, row.src, row.alt, row.altStatus]);
+      });
+
+      const csvContent = rows.map(e => e.map(v => `"${v}"`).join(',')).join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = filename;
+      link.click();
+    }
+  </script>
+</body>
+</html>
