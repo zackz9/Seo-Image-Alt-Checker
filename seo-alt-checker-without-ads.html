@@ -34,6 +34,8 @@
       <div class="flex gap-4">
         <button id="downloadWithAlt" class="bg-green-600 text-white px-4 py-1 rounded hidden">📥 Avec ALT</button>
         <button id="downloadWithoutAlt" class="bg-red-600 text-white px-4 py-1 rounded hidden">📥 Sans ALT</button>
+        <button id="copySuggestedAlts" class="bg-yellow-500 text-white px-4 py-1 rounded hidden">📋 Copier ALT suggérés</button>
+
       </div>
     </div>
 
@@ -97,6 +99,8 @@
       downloadWithAlt.classList.add('hidden');
       downloadWithoutAlt.classList.add('hidden');
       resultsSection.classList.remove('hidden');
+      copySuggestedAlts.classList.remove('hidden');
+
       switchTab('tabAll');
 
       try {
@@ -124,6 +128,10 @@
           const alt = img.getAttribute('alt');
           const altStatus = (alt === null || alt.trim() === '') ? '❌' : '✅';
           const name = src.split('/').pop()?.split('.')[0]?.replace(/[-_]/g, ' ') || '[non défini]';
+
+          const domain = (new URL(url)).hostname.replace('www.', '').split('.')[0]; 
+          const suggestedAlt = `image-${domain}-${name.replace(/\s+/g, '-').toLowerCase()}`;
+
           const preview = src.startsWith('http') ? `<img src="${src}" class="w-24 h-24 object-contain border mt-2"/>` : '';
 
           const html = `
@@ -135,7 +143,14 @@
             </div>
           `;
 
-          const row = { name, src, alt: alt || '', altStatus };
+          const row = {
+                      name,
+                      src,
+                      alt: alt || '',
+                      altStatus,
+                      newAlt: suggestedAlt
+                    };
+
           csvData.push(row);
 
           allImagesDiv.innerHTML += html;
@@ -164,9 +179,9 @@
     });
 
     function exportCSV(data, filename) {
-      const rows = [['Nom image', 'Image src', 'ALT value', 'Status']];
+      const rows = [['Nom image', 'Image src', 'ALT value', 'Status', 'NEW ALT SUGGESTED']];
       data.forEach(row => {
-        rows.push([row.name, row.src, row.alt, row.altStatus]);
+        rows.push([row.name, row.src, row.alt, row.altStatus, row.newAlt]);
       });
 
       const csvContent = rows.map(e => e.map(v => `"${v}"`).join(',')).join('\n');
@@ -176,6 +191,19 @@
       link.download = filename;
       link.click();
     }
+
+
+    const copySuggestedAlts = document.getElementById('copySuggestedAlts');
+
+    copySuggestedAlts.addEventListener('click', () => {
+      const altList = csvData.map(row => row.newAlt).join('\n');
+      navigator.clipboard.writeText(altList).then(() => {
+        alert("✅ ALT suggérés copiés dans le presse-papiers !");
+      }).catch(err => {
+        alert("❌ Erreur lors de la copie : " + err);
+      });
+    });
+
   </script>
 </body>
 </html>
