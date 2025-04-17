@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SEO ALT IMG Checker</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  </head>
+  <body class="bg-gray-100 min-h-screen flex flex-col items-center p-8">
+    <h1 class="text-3xl font-bold mb-6">SEO ALT IMG Checker</h1>
+
+    <div class="w-full max-w-xl">
+      <input
+        id="urlInput"
+        type="text"
+        placeholder="Entrez l'URL d'une page..."
+        class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 mb-4"
+      />
+      <button
+        id="checkBtn"
+        class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
+      >
+        Vérifier les images
+      </button>
+    </div>
+
+    <div id="results" class="w-full max-w-4xl mt-10 hidden">
+      <h2 class="text-2xl font-semibold mb-4">Toutes les balises &lt;img&gt; :</h2>
+      <div id="allImages" class="bg-white p-4 rounded-lg shadow mb-8 overflow-x-auto"></div>
+
+      <h2 class="text-2xl font-semibold mb-4">Images sans ALT ou ALT vide :</h2>
+      <div id="missingAlts" class="bg-white p-4 rounded-lg shadow overflow-x-auto"></div>
+
+      <button id="downloadBtn" class="mt-6 bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">
+        Télécharger CSV
+      </button>
+    </div>
+
+    <script>
+      const checkBtn = document.getElementById('checkBtn');
+      const urlInput = document.getElementById('urlInput');
+      const allImagesDiv = document.getElementById('allImages');
+      const missingAltsDiv = document.getElementById('missingAlts');
+      const resultsSection = document.getElementById('results');
+      const downloadBtn = document.getElementById('downloadBtn');
+
+      checkBtn.addEventListener('click', async () => {
+        const url = urlInput.value.trim();
+        if (!url) return alert("Veuillez entrer une URL valide.");
+
+        try {
+          const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+          const data = await response.json();
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(data.contents, 'text/html');
+          const images = Array.from(doc.querySelectorAll('img'));
+
+          const allImgsHTML = images.map(img => `<div class='mb-2'><code>${img.outerHTML}</code></div>`).join('');
+          allImagesDiv.innerHTML = allImgsHTML;
+
+          const missingAlts = images.filter(img => !img.hasAttribute('alt') || img.getAttribute('alt').trim() === '');
+          const missingImgsHTML = missingAlts.map(img => `<div class='mb-2'><code>${img.outerHTML}</code></div>`).join('');
+          missingAltsDiv.innerHTML = missingImgsHTML || '<p class="text-green-600">Toutes les images ont un ALT !</p>';
+
+          resultsSection.classList.remove('hidden');
+        } catch (error) {
+          alert("Erreur lors du chargement de la page. Assurez-vous que l'URL est correcte et accessible.");
+        }
+      });
+
+      downloadBtn.addEventListener('click', () => {
+        const rows = [['Image src', 'ALT value']];
+        const images = allImagesDiv.querySelectorAll('code');
+        images.forEach(code => {
+          const div = document.createElement('div');
+          div.innerHTML = code.textContent;
+          const img = div.querySelector('img');
+          rows.push([img.src || '', img.getAttribute('alt') || '']);
+        });
+
+        const csvContent = rows.map(e => e.map(v => `"${v}"`).join(',')).join('\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.setAttribute('href', URL.createObjectURL(blob));
+        link.setAttribute('download', 'seo_alt_img_report.csv');
+        link.click();
+      });
+    </script>
+  </body>
+</html>

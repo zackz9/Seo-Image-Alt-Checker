@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Analyseur de Balises H1</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
+  <div class="bg-white shadow-md rounded p-6 w-full max-w-2xl">
+    <h1 class="text-2xl font-bold mb-4 text-center">Analyseur de balises &lt;h1&gt;</h1>
+    
+    <input id="urlInput" type="text" placeholder="Entrez une URL ex: https://..." class="w-full border p-3 rounded mb-4" />
+    <button id="analyzeBtn" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">Analyser</button>
+    
+    <div id="result" class="mt-6 space-y-4 text-sm"></div>
+  </div>
+
+  <script>
+    const normalize = str => str.toLowerCase().trim().replace(/\s+/g, '');
+
+    document.getElementById("analyzeBtn").addEventListener("click", async () => {
+      const url = document.getElementById("urlInput").value.trim();
+      const resultDiv = document.getElementById("result");
+      resultDiv.innerHTML = "<p class='text-gray-600'>Chargement...</p>";
+
+      if (!url) {
+        resultDiv.innerHTML = "<p class='text-red-600'>Veuillez entrer une URL valide.</p>";
+        return;
+      }
+
+      try {
+        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
+        const response = await fetch(proxyUrl);
+        const html = await response.text();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, "text/html");
+
+        const h1Elements = doc.querySelectorAll("h1");
+        const h1Texts = Array.from(h1Elements).map(h => h.textContent.trim());
+        const normalized = h1Texts.map(normalize);
+
+        const duplicates = h1Texts.filter((text, index) => {
+          return normalized.indexOf(normalize(text)) !== index;
+        });
+
+        let htmlResult = `
+          <div class="p-4 bg-gray-50 rounded border">
+            <p class="font-semibold text-lg">Nombre de balises &lt;h1&gt; : <strong>${h1Texts.length}</strong></p>
+            <ul class="list-disc ml-5 mt-2 space-y-2">
+              ${h1Texts.map((text, i) => `<li><strong>H1 ${i + 1}:</strong> "${text}" (${text.length} caractères)</li>`).join("")}
+            </ul>
+          </div>
+        `;
+
+        // Doublons
+        if (duplicates.length > 0) {
+          const uniqueDupes = [...new Set(duplicates)];
+          htmlResult += `
+            <div class="mt-4 text-red-600 font-semibold">
+              <p>⚠️ Doublons détectés :</p>
+              <ul class="list-disc ml-5">
+                ${uniqueDupes.map(text => `<li>"${text}"</li>`).join("")}
+              </ul>
+            </div>
+          `;
+        } else {
+          htmlResult += `<p class="mt-4 text-green-600 font-semibold">✅ Aucun doublon trouvé !</p>`;
+        }
+
+        // Vérifier erreur 404
+        const pageTitle = doc.title.toLowerCase();
+        if (pageTitle.includes('404') || pageTitle.includes('not found') || h1Texts.some(t => t.toLowerCase().includes("page n'a pas été trouvée"))) {
+          htmlResult += `<p class="mt-4 text-yellow-600 font-semibold">⚠️ Il semble que la page analysée soit une page d'erreur (404).</p>`;
+        }
+
+        resultDiv.innerHTML = htmlResult;
+      } catch (err) {
+        resultDiv.innerHTML = `<p class="text-red-600">Erreur lors de l'analyse : ${err.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

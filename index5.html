@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Image Alt Checker (Single URL)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+    <div class="container mx-auto p-4 max-w-3xl">
+        <h1 class="text-2xl font-bold text-center mb-6">SEO Image Alt Checker</h1>
+        <div class="bg-white p-6 rounded-lg shadow-lg">
+            <!-- Input pour une seule URL -->
+            <label for="url" class="block text-sm font-medium text-gray-700 mb-2">
+                Entrez une URL :
+            </label>
+            <input
+                type="text"
+                id="url"
+                class="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="https://www.website1.com/page1"
+            />
+
+            <!-- Bouton pour lancer l'analyse -->
+            <button
+                id="checkBtn"
+                class="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+                onclick="startAnalysis()"
+            >
+                Analyser l'URL
+            </button>
+
+            <!-- Zone des résultats -->
+            <div id="results" class="mt-6 hidden">
+                <h2 class="text-lg font-semibold mb-4">Résultats de l'analyse</h2>
+                <div id="progress" class="text-sm text-gray-600 mb-4"></div>
+                
+                <!-- Section pour toutes les images -->
+                <div id="allImages" class="mb-6">
+                    <h3 class="text-md font-medium mb-2">Toutes les images trouvées</h3>
+                    <div id="allImagesList" class="space-y-2"></div>
+                </div>
+                
+                <!-- Section pour les images sans alt ou alt vide -->
+                <div id="missingAltImages" class="mb-6">
+                    <h3 class="text-md font-medium mb-2">Images sans alt ou avec alt vide</h3>
+                    <div id="missingAltList" class="space-y-2"></div>
+                </div>
+
+                <button
+                    id="downloadBtn"
+                    class="mt-4 w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 hidden"
+                    onclick="downloadCSV()"
+                >
+                    Télécharger le rapport CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let csvData = [];
+
+        async function startAnalysis() {
+            const urlInput = document.getElementById('url').value.trim();
+            const checkBtn = document.getElementById('checkBtn');
+            const resultsDiv = document.getElementById('results');
+            const progressDiv = document.getElementById('progress');
+            const allImagesList = document.getElementById('allImagesList');
+            const missingAltList = document.getElementById('missingAltList');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            if (!urlInput || !isValidUrl(urlInput)) {
+                alert('Veuillez entrer une URL valide (ex. : https://www.example.com).');
+                return;
+            }
+
+            // Réinitialiser l'interface
+            checkBtn.disabled = true;
+            resultsDiv.classList.remove('hidden');
+            allImagesList.innerHTML = '';
+            missingAltList.innerHTML = '';
+            csvData = [];
+            progressDiv.textContent = `Analyse de ${urlInput}...`;
+
+            try {
+                console.log(`Démarrage de l'analyse pour : ${urlInput}`);
+                const { allImages, missingAltImages } = await checkImages(urlInput);
+                console.log('Images récupérées :', allImages);
+                displayResults(urlInput, allImages, missingAltImages);
+                progressDiv.textContent = `Analyse terminée.`;
+                if (allImages.length > 0) {
+                    downloadBtn.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Erreur lors de l’analyse :', error);
+                displayError(urlInput, error.message);
+                progressDiv.textContent = `Erreur lors de l'analyse.`;
+            } finally {
+                checkBtn.disabled = false;
+            }
+        }
+
+        function isValidUrl(url) {
+            try {
+                new URL(url);
+                return url.startsWith('http://') || url.startsWith('https://');
+            } catch {
+                return false;
+            }
+        }
+
+        async function checkImages(url) {
+            console.log(`Envoi de la requête pour : ${url}`);
+            // Utiliser un proxy CORS
+            const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`;
+            let response;
+            try {
+                response = await fetch(proxyUrl, {
+                    headers: {
+                        'Accept': 'text/html'
+                    }
+                });
+            } catch (error) {
+                throw new Error(`Erreur réseau : ${error.message}`);
+            }
+
+            if (!response.ok) {
+                throw new Error(`Erreur HTTP ${response.status} : ${response.statusText}`);
+            }
+
+            const html = await response.text();
+            console.log('HTML récupéré, taille :', html.length);
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const images = doc.querySelectorAll('img');
+            const allImages = [];
+            const missingAltImages = [];
+
+            images.forEach((img, index) => {
+                const src = img.getAttribute('src') || 'Source non définie';
+                const alt = img.getAttribute('alt');
+                let altStatus;
+
+                if (alt === null) {
+                    altStatus = 'Absent';
+                    missingAltImages.push({ index: index + 1, src });
+                } else if (alt.trim() === '') {
+                    altStatus = 'Vide';
+                    missingAltImages.push({ index: index + 1, src });
+                } else {
+                    altStatus = 'Présent';
+                }
+
+                allImages.push({ index: index + 1, src, alt: alt || 'Aucun alt', altStatus });
+                csvData.push({ pageUrl: url, src, altStatus });
+            });
+
+            return { allImages, missingAltImages };
+        }
+
+        function displayResults(url, allImages, missingAltImages) {
+            const allImagesList = document.getElementById('allImagesList');
+            const missingAltList = document.getElementById('missingAltList');
+
+            // Afficher toutes les images
+            let allImagesHtml = '';
+            if (allImages.length === 0) {
+                allImagesHtml = `<p class="text-gray-600">Aucune image trouvée.</p>`;
+            } else {
+                allImagesHtml = `<p class="text-gray-600">${allImages.length} image(s) trouvée(s) :</p>`;
+                allImagesHtml += '<ul class="list-disc ml-6">';
+                allImages.forEach(item => {
+                    allImagesHtml += `<li>Image ${item.index} (src: ${item.src}, alt: "${item.alt}")</li>`;
+                });
+                allImagesHtml += '</ul>';
+            }
+            allImagesList.innerHTML = allImagesHtml;
+
+            // Afficher les images sans alt ou alt vide
+            let missingAltHtml = '';
+            if (missingAltImages.length === 0) {
+                missingAltHtml = `<p class="text-green-600">Aucune image sans alt ou avec alt vide.</p>`;
+            } else {
+                missingAltHtml = `<p class="text-red-600">${missingAltImages.length} image(s) sans alt ou avec alt vide :</p>`;
+                missingAltHtml += '<ul class="list-disc ml-6">';
+                missingAltImages.forEach(item => {
+                    missingAltHtml += `<li>Image ${item.index} (src: ${item.src})</li>`;
+                });
+                missingAltHtml += '</ul>';
+            }
+            missingAltList.innerHTML = missingAltHtml;
+        }
+
+        function displayError(url, error) {
+            const allImagesList = document.getElementById('allImagesList');
+            const missingAltList = document.getElementById('missingAltList');
+            allImagesList.innerHTML = `<p class="text-red-600">Erreur : ${error}</p>`;
+            missingAltList.innerHTML = '';
+        }
+
+        function downloadCSV() {
+            let csvContent = 'Page URL,Image Src,Alt Status\n';
+            csvData.forEach(item => {
+                csvContent += `"${item.pageUrl}","${item.src}","${item.altStatus}"\n`;
+            });
+
+            const link = document.createElement('a');
+            link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+            link.download = 'image_alt_report.csv';
+            link.click();
+        }
+    </script>
+</body>
+</html>
