@@ -1,50 +1,32 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SEO ALT IMAGE CHECKER</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      background-color: #f2f2f2;
-      margin: 0;
-    }
-
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 20px;
-      padding: 20px;
-      max-width: 600px;
-      width: 100%;
-    }
-
-    .grid-container a {
-      text-align: center;
-      text-decoration: none;
-      background-color: #4CAF50;
-      color: white;
-      padding: 15px 20px;
-      border-radius: 8px;
-      transition: background-color 0.3s;
-      font-size: 16px;
-    }
-
-    .grid-container a:hover {
-      background-color: #45a049;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <title>Dashboard - Grille de Blocs</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="grid-container">
-    <a href="./index6.html">SEO ALT CHECKER</a>
-    <a href="./index6.html">SEO ALT CHECKER</a> 
-    <a href="./index2.html">SEO ALT CHECKER Without ADS</a> 
+<body class="bg-gray-100 p-6 min-h-screen flex items-center justify-center">
+  <div class="max-w-4xl w-full">
+    <h1 class="text-3xl font-bold mb-8 text-center">🧭 Menu de Navigation</h1>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+      <a href="./h1-detector.html" class="bg-white shadow-lg p-6 rounded-lg text-center hover:bg-blue-100 transition cursor-pointer">
+        <h2 class="text-xl font-semibold mb-2">Analyseur H1</h2>
+        <p class="text-gray-600">Scanner une ou plusieurs pages</p>
+      </a>
+      <a href="./index2.html" class="bg-white shadow-lg p-6 rounded-lg text-center hover:bg-green-100 transition cursor-pointer">
+        <h2 class="text-xl font-semibold mb-2">SEO ALT CHECKER Without ADS</h2>
+      </a>
+
+      <a href="./index6.html" class="bg-white shadow-lg p-6 rounded-lg text-center hover:bg-yellow-100 transition cursor-pointer">
+        <h2 class="text-xl font-semibold mb-2">SEO ALT CHECKER</h2>
+      </a>
+      <a href="./meta-detector.html" class="bg-white shadow-lg p-6 rounded-lg text-center hover:bg-yellow-100 transition cursor-pointer">
+        <h2 class="text-xl font-semibold mb-2">SEO Description Checker</h2>
+      </a>
+
+      <!-- Ajoute d'autres blocs si besoin -->
+    </div>
   </div>
 </body>
 </html>

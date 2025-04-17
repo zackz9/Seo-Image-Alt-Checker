@@ -1,82 +1,82 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Analyseur de Balises H1</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SEO H1 Checker</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-6">
-  <div class="bg-white shadow-md rounded p-6 w-full max-w-2xl">
-    <h1 class="text-2xl font-bold mb-4 text-center">Analyseur de balises &lt;h1&gt;</h1>
-    
-    <input id="urlInput" type="text" placeholder="Entrez une URL ex: https://..." class="w-full border p-3 rounded mb-4" />
-    <button id="analyzeBtn" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">Analyser</button>
-    
-    <div id="result" class="mt-6 space-y-4 text-sm"></div>
+<body class="bg-gray-100 min-h-screen p-8">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">SEO H1 Checker</h1>
+    <input id="urlInput" type="text" placeholder="Entrez l'URL..." class="w-full p-3 mb-4 rounded border border-gray-300">
+    <button id="checkBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Analyser les H1</button>
+
+    <div id="results" class="mt-6 hidden">
+      <h2 class="text-xl font-semibold mb-2">Résultats :</h2>
+      <div id="warnings" class="mb-4 text-yellow-700 bg-yellow-100 p-3 rounded hidden"></div>
+      <div id="h1Results" class="space-y-4"></div>
+    </div>
   </div>
 
   <script>
-    const normalize = str => str.toLowerCase().trim().replace(/\s+/g, '');
+    document.getElementById('checkBtn').addEventListener('click', async () => {
+      const url = document.getElementById('urlInput').value.trim();
+      const h1Results = document.getElementById('h1Results');
+      const warnings = document.getElementById('warnings');
+      const resultsDiv = document.getElementById('results');
 
-    document.getElementById("analyzeBtn").addEventListener("click", async () => {
-      const url = document.getElementById("urlInput").value.trim();
-      const resultDiv = document.getElementById("result");
-      resultDiv.innerHTML = "<p class='text-gray-600'>Chargement...</p>";
+      h1Results.innerHTML = '';
+      warnings.innerHTML = '';
+      warnings.classList.add('hidden');
+      resultsDiv.classList.remove('hidden');
 
-      if (!url) {
-        resultDiv.innerHTML = "<p class='text-red-600'>Veuillez entrer une URL valide.</p>";
+      if (!/^https?:\/\//i.test(url)) {
+        h1Results.innerHTML = '<p class="text-red-500">L\'URL doit commencer par http:// ou https://</p>';
         return;
       }
 
+      h1Results.innerHTML = '<p class="text-sm text-gray-400 italic">Chargement...</p>';
+
       try {
-        const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-        const response = await fetch(proxyUrl);
-        const html = await response.text();
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error("Échec du chargement de la page");
+        const data = await response.json();
 
         const parser = new DOMParser();
-        const doc = parser.parseFromString(html, "text/html");
+        const doc = parser.parseFromString(data.contents, 'text/html');
+        const h1s = Array.from(doc.querySelectorAll('h1'));
 
-        const h1Elements = doc.querySelectorAll("h1");
-        const h1Texts = Array.from(h1Elements).map(h => h.textContent.trim());
-        const normalized = h1Texts.map(normalize);
-
-        const duplicates = h1Texts.filter((text, index) => {
-          return normalized.indexOf(normalize(text)) !== index;
-        });
-
-        let htmlResult = `
-          <div class="p-4 bg-gray-50 rounded border">
-            <p class="font-semibold text-lg">Nombre de balises &lt;h1&gt; : <strong>${h1Texts.length}</strong></p>
-            <ul class="list-disc ml-5 mt-2 space-y-2">
-              ${h1Texts.map((text, i) => `<li><strong>H1 ${i + 1}:</strong> "${text}" (${text.length} caractères)</li>`).join("")}
-            </ul>
-          </div>
-        `;
-
-        // Doublons
-        if (duplicates.length > 0) {
-          const uniqueDupes = [...new Set(duplicates)];
-          htmlResult += `
-            <div class="mt-4 text-red-600 font-semibold">
-              <p>⚠️ Doublons détectés :</p>
-              <ul class="list-disc ml-5">
-                ${uniqueDupes.map(text => `<li>"${text}"</li>`).join("")}
-              </ul>
-            </div>
-          `;
-        } else {
-          htmlResult += `<p class="mt-4 text-green-600 font-semibold">✅ Aucun doublon trouvé !</p>`;
+        if (h1s.length === 0) {
+          h1Results.innerHTML = '<p class="text-red-500">Aucune balise <code>&lt;h1&gt;</code> trouvée.</p>';
+          return;
         }
 
-        // Vérifier erreur 404
-        const pageTitle = doc.title.toLowerCase();
-        if (pageTitle.includes('404') || pageTitle.includes('not found') || h1Texts.some(t => t.toLowerCase().includes("page n'a pas été trouvée"))) {
-          htmlResult += `<p class="mt-4 text-yellow-600 font-semibold">⚠️ Il semble que la page analysée soit une page d'erreur (404).</p>`;
+        if (h1s.length > 1) {
+          warnings.innerHTML = `⚠️ <strong>${h1s.length}</strong> balises <code>&lt;h1&gt;</code> détectées. Il est recommandé d’avoir un seul H1 par page pour une hiérarchie claire.`;
+          warnings.classList.remove('hidden');
         }
 
-        resultDiv.innerHTML = htmlResult;
+        const report = h1s.map((el, index) => {
+          const text = el.textContent.trim();
+          const wordCount = text.split(/\s+/).filter(Boolean).length;
+          const charCount = text.length;
+          let seoAdvice = '';
+
+          if (charCount < 20) seoAdvice = '<span class="text-yellow-600">Titre court - potentiellement trop vague</span>';
+          else if (charCount > 70) seoAdvice = '<span class="text-yellow-600">Titre long - risque de troncature dans les SERP</span>';
+          else seoAdvice = '<span class="text-green-600">Longueur optimale</span>';
+
+          return `<div class='p-4 bg-white rounded shadow'>
+            <p><strong>H1 #${index + 1}:</strong> ${text || '<em>(vide)</em>'}</p>
+            <p><em>Mots:</em> ${wordCount} | <em>Caractères:</em> ${charCount}</p>
+            <p class="mt-1">💡 ${seoAdvice}</p>
+          </div>`;
+        }).join('');
+
+        h1Results.innerHTML = report;
       } catch (err) {
-        resultDiv.innerHTML = `<p class="text-red-600">Erreur lors de l'analyse : ${err.message}</p>`;
+        h1Results.innerHTML = `<p class='text-red-500'>Erreur : ${err.message}</p>`;
       }
     });
   </script>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SEO Meta Description Checker</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 min-h-screen p-8">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">SEO Meta Description Checker</h1>
+    <input id="urlInput" type="text" placeholder="Entrez l'URL..." class="w-full p-3 mb-4 rounded border border-gray-300">
+    <button id="checkBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Analyser la Meta Description</button>
+
+    <div id="results" class="mt-6 hidden">
+      <h2 class="text-xl font-semibold mb-2">Résultats :</h2>
+      <div id="metaResults" class="space-y-4"></div>
+      <div id="seoScore" class="mt-4 text-lg font-bold"></div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('checkBtn').addEventListener('click', async () => {
+      const url = document.getElementById('urlInput').value.trim();
+      const metaResults = document.getElementById('metaResults');
+      const seoScore = document.getElementById('seoScore');
+      const resultsDiv = document.getElementById('results');
+
+      metaResults.innerHTML = '';
+      seoScore.innerHTML = '';
+      resultsDiv.classList.remove('hidden');
+
+      if (!/^https?:\/\//i.test(url)) {
+        metaResults.innerHTML = '<p class="text-red-500">L\'URL doit commencer par http:// ou https://</p>';
+        return;
+      }
+
+      metaResults.innerHTML = '<p class="text-sm text-gray-400 italic">Chargement...</p>';
+
+      try {
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+        if (!response.ok) throw new Error("Échec du chargement de la page. Vérifiez que l'URL est correcte et accessible.");
+        const data = await response.json();
+
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(data.contents, 'text/html');
+        const meta = doc.querySelector('meta[name="description"]');
+
+        if (!meta || !meta.content.trim()) {
+          metaResults.innerHTML = '<p class="text-red-500">Aucune balise <code>&lt;meta name=\"description\"&gt;</code> trouvée ou la description est vide.</p>';
+          seoScore.innerHTML = '<span class="text-red-600">🔴 Score SEO : 0/100 (Description manquante)</span>';
+          return;
+        }
+
+        const text = meta.content.trim();
+        const wordCount = text.split(/\s+/).filter(Boolean).length;
+        const charCount = text.length;
+        let seoAdvice = '';
+        let score = 0;
+        let scoreColor = '';
+
+        if (charCount < 70) {
+          seoAdvice = '<span class="text-yellow-600">Description courte - peu informative</span>';
+          score = 50;
+          scoreColor = '🟡';
+        } else if (charCount > 160) {
+          seoAdvice = '<span class="text-yellow-600">Description longue - risque de troncature dans les résultats de recherche</span>';
+          score = 60;
+          scoreColor = '🟡';
+        } else {
+          seoAdvice = '<span class="text-green-600">Longueur optimale pour le SEO</span>';
+          score = 100;
+          scoreColor = '🟢';
+        }
+
+        metaResults.innerHTML = `
+          <div class='p-4 bg-white rounded shadow'>
+            <p><strong>Description :</strong> ${text}</p>
+            <p><em>Mots :</em> ${wordCount} | <em>Caractères :</em> ${charCount}</p>
+            <p class="mt-1">💡 ${seoAdvice}</p>
+          </div>
+        `;
+
+        seoScore.innerHTML = `<span class="${score === 100 ? 'text-green-600' : 'text-yellow-600'}">${scoreColor} Score SEO : ${score}/100</span>`;
+      } catch (err) {
+        metaResults.innerHTML = `<p class='text-red-500'>Erreur : ${err.message}</p>`;
+        seoScore.innerHTML = '<span class="text-red-600">🔴 Score SEO : 0/100</span>';
+      }
+    });
+  </script>
+</body>
+</html>
