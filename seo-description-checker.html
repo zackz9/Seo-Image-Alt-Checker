@@ -42,15 +42,20 @@
   </div>
 
   <script>
+    let loadingInterval = null;
     document.getElementById('checkBtn').addEventListener('click', async () => {
       const url = document.getElementById('urlInput').value.trim();
       const metaResults = document.getElementById('metaResults');
       const seoScore = document.getElementById('seoScore');
       const resultsDiv = document.getElementById('results');
 
-      metaResults.innerHTML = '';
-      seoScore.innerHTML = '';
-      resultsDiv.classList.remove('hidden');
+      if(metaResults && seoScore && resultsDiv.classList.contains('hidden')) {
+
+        metaResults.innerHTML = '';
+        seoScore.innerHTML = '';
+        resultsDiv.classList.remove('hidden');
+      }
+
 
       if (!/^https?:\/\//i.test(url)) {
         metaResults.innerHTML = '<p class="text-red-500">L\'URL doit commencer par http:// ou https://</p>';
@@ -141,8 +146,12 @@
       loadingAnim.classList.add('hidden');
 
       } catch (err) {
-        metaResults.innerHTML = `<p class='text-red-500'>Erreur : ${err.message}</p>`;
-        seoScore.innerHTML = '<span class="text-red-600">🔴 Score SEO : 0/100</span>';
+
+        if (metaResults && seoScore) {
+
+          metaResults.innerHTML = `<p class='text-red-500'>Erreur : ${err.message}</p>`;
+          seoScore.innerHTML = '<span class="text-red-600">🔴 Score SEO : 0/100</span>';
+        }
 
 
         clearInterval(loadingInterval);
@@ -151,37 +160,54 @@
       }
 
 
-      // Réinitialiser localStorage
-document.getElementById('resetHistory').addEventListener('click', () => {
-  if (confirm("Êtes-vous sûr de vouloir supprimer l’historique ?")) {
-    localStorage.removeItem('metaDescriptions');
-    
-  }
-});
+      
 
-// Export CSV
-document.getElementById('exportCSV').addEventListener('click', () => {
-  const storedMeta = JSON.parse(localStorage.getItem('metaDescriptions') || '[]');
-  if (storedMeta.length === 0) {
-    return;
-  }
 
-  let csv = "URL,Description\n";
-  storedMeta.forEach(item => {
-    const safeDescription = item.description.replace(/"/g, '""'); // pour éviter les erreurs CSV
-    csv += `"${item.url}","${safeDescription}"\n`;
-  });
 
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement("a");
-  link.setAttribute("href", URL.createObjectURL(blob));
-  link.setAttribute("download", "meta_descriptions.csv");
-  link.style.display = "none";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-});
+    // Export CSV
+    document.getElementById('exportCSV').addEventListener('click', () => {
+          const storedMeta = JSON.parse(localStorage.getItem('metaDescriptions') || '[]');
+          if (storedMeta.length === 0) {
+            return;
+          }
 
+          let csv = "URL,Description\n";
+          storedMeta.forEach(item => {
+            const safeDescription = item.description.replace(/"/g, '""'); // pour éviter les erreurs CSV
+            csv += `"${item.url}","${safeDescription}"\n`;
+          });
+
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement("a");
+          link.setAttribute("href", URL.createObjectURL(blob));
+          link.setAttribute("download", "meta_descriptions.csv");
+          link.style.display = "none";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+      });
+
+    });
+
+    // Réinitialiser localStorage
+      
+    document.getElementById('resetHistory').addEventListener('click', () => {
+      if (confirm("Êtes-vous sûr de vouloir supprimer l’historique ?")) {
+        localStorage.removeItem('metaDescriptions');
+        document.getElementById('urlInput').value = '';
+        document.getElementById('metaResults').innerHTML = '';
+        document.getElementById('seoScore').innerHTML = '';
+        document.getElementById('results').classList.add('hidden');
+
+        document.getElementById('loadingAnimated').classList.add('hidden');
+
+        if (loadingInterval) {
+          clearInterval(loadingInterval);
+          loadingInterval = null;
+        }
+
+        alert("Historique vidé. Vous pouvez relancer un test.");
+      }
     });
   </script>
 </body>
