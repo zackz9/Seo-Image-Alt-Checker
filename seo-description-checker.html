@@ -155,7 +155,7 @@
 document.getElementById('resetHistory').addEventListener('click', () => {
   if (confirm("Êtes-vous sûr de vouloir supprimer l’historique ?")) {
     localStorage.removeItem('metaDescriptions');
-    alert("Historique vidé !");
+    
   }
 });
 
@@ -163,7 +163,6 @@ document.getElementById('resetHistory').addEventListener('click', () => {
 document.getElementById('exportCSV').addEventListener('click', () => {
   const storedMeta = JSON.parse(localStorage.getItem('metaDescriptions') || '[]');
   if (storedMeta.length === 0) {
-    alert("Aucune description enregistrée à exporter.");
     return;
   }
 
