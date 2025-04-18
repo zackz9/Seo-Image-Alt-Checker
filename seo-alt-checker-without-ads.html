@@ -53,6 +53,8 @@
   </div>
 
   <script>
+
+
     const checkBtn = document.getElementById('checkBtn');
     const urlInput = document.getElementById('urlInput');
     const imageCountSpan = document.getElementById('imageCount');
@@ -111,7 +113,8 @@ downloadWithAlt.classList.add('hidden');
       downloadWithoutAlt.classList.add('hidden');
       resultsSection.classList.remove('hidden');
       copySuggestedAlts.classList.remove('hidden');
-      switchTab('tabAll');
+
+
 
       try {
         const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
@@ -176,8 +179,27 @@ downloadWithAlt.classList.add('hidden');
         imageCountSpan.textContent = `Images totales : ${filteredImages.length}`;
         missingCountSpan.textContent = `Sans ALT : ${withoutAlt.length}`;
 
+        if (withoutAlt.length > 0) {
+          switchTab('tabMissing');
+          setTimeout(() => {
+            exportCSV(withoutAlt, 'images_sans_alt.csv');
+          }, 500);
+        } else {
+          switchTab('tabAll');
+        }
+
         if (withAlt.length > 0) downloadWithAlt.classList.remove('hidden');
-        if (withoutAlt.length > 0) downloadWithoutAlt.classList.remove('hidden');
+
+        
+        if (withAlt.length > 0) downloadWithAlt.classList.remove('hidden');
+        if (withoutAlt.length > 0) {
+          downloadWithoutAlt.classList.remove('hidden');
+
+          setTimeout(() => {
+            exportCSV(withoutAlt, 'images_sans_alt.csv');
+          }, 500);
+        }
+
 
         // Téléchargements CSV
         downloadWithAlt.onclick = () => exportCSV(withAlt, 'images_avec_alt.csv');
@@ -206,7 +228,11 @@ downloadWithAlt.classList.add('hidden');
     const copySuggestedAlts = document.getElementById('copySuggestedAlts');
 
     copySuggestedAlts.addEventListener('click', () => {
-      const altList = csvData.map(row => row.newAlt).join('\n');
+      const altList = csvData
+          .filter(row => row.altStatus === '❌')
+          .map(row => row.newAlt)
+          .join('\n');
+
       navigator.clipboard.writeText(altList).then(() => {
         alert("✅ ALT suggérés copiés dans le presse-papiers !");
       }).catch(err => {
