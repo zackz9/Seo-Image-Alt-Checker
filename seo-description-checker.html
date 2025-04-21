@@ -129,6 +129,19 @@
         </span>`;
     };
 
+
+    const copyToClipboard = (text) => {
+      navigator.clipboard.writeText(text).then(() => {
+        Toastify({
+          text: "✅ Copié dans le presse-papiers",
+          duration: 2500,
+          gravity: 'bottom',
+          position: 'right',
+          style: { background: "#4ade80" }
+        }).showToast();
+      });
+    };
+
     document.getElementById('checkBtn').addEventListener('click', async () => {
       const mode = document.querySelector('input[name="mode"]:checked').value;
       const urls = mode === 'single'
@@ -187,14 +200,45 @@
             <div class="google-title">${title}</div>
             <div class="google-desc">${description}</div>
 
-            <div class="mt-6">
+            <div class="mt-6 relative">
               <label class="block text-sm font-semibold mb-1">🎯 Page Title</label>
+              <button class="copy-title absolute top-0 right-2 text-gray-500 hover:text-blue-600" title="Copier le titre">
+              <svg class=" size-16" id='Duplicate_1_24' width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><rect width='24' height='24' stroke='none' fill='#000000' opacity='0'/>
+              <g transform="matrix(0.83 0 0 0.83 12 12)" >
+              <g style="" >
+              <g transform="matrix(1 0 0 1 3.5 3.5)" >
+              <path style="stroke: rgb(0,0,0); stroke-width: 1; stroke-dasharray: none; stroke-linecap: round; stroke-dashoffset: 0; stroke-linejoin: round; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;" transform=" translate(-15.5, -15.5)" d="M 18.5 7.49951 L 22.4999 7.49951 C 23.0522 7.49951 23.4999 7.94723 23.4999 8.49951 L 23.4999 22.4995 C 23.4999 23.0518 23.0522 23.4995 22.4999 23.4995 L 8.49988 23.4995 C 7.94759 23.4995 7.49988 23.0518 7.49988 22.4995 L 7.49988 18.5" stroke-linecap="round" />
+              </g>
+              <g transform="matrix(1 0 0 1 -3.5 -3.5)" >
+              <path style="stroke: rgb(0,0,0); stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: round; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;" transform=" translate(-8.5, -8.5)" d="M 0.499901 1.50049 C 0.499901 0.948203 0.947616 0.500488 1.4999 0.500488 L 15.4999 0.500488 C 16.0522 0.500488 16.4999 0.948204 16.4999 1.50049 L 16.4999 15.5005 C 16.4999 16.0528 16.0522 16.5005 15.4999 16.5005 L 1.4999 16.5005 C 0.947615 16.5005 0.499901 16.0528 0.499901 15.5005 L 0.499901 1.50049 Z" stroke-linecap="round" />
+              </g>
+              </g>
+              </g>
+              </svg>
+
+              </button>
               <input class="title-input w-full border p-3 rounded-lg mb-1" value="${title}" />
               <span class="tag relative group title-tag ${tagColor(titlePx <= 560)}"></span>
             </div>
-            <div class="mt-4">
+            <div class="mt-4 relative">
               <label class="block text-sm font-semibold mb-1">📝 Meta Description</label>
+                <button class="copy-desc absolute top-0 right-2 text-gray-500 hover:text-blue-600" title="Copier la description">
+                <svg class=" size-16" id='Duplicate_1_24' width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'><rect width='24' height='24' stroke='none' fill='#000000' opacity='0'/>
+                <g transform="matrix(0.83 0 0 0.83 12 12)" >
+                <g style="" >
+                <g transform="matrix(1 0 0 1 3.5 3.5)" >
+                <path style="stroke: rgb(0,0,0); stroke-width: 1; stroke-dasharray: none; stroke-linecap: round; stroke-dashoffset: 0; stroke-linejoin: round; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;" transform=" translate(-15.5, -15.5)" d="M 18.5 7.49951 L 22.4999 7.49951 C 23.0522 7.49951 23.4999 7.94723 23.4999 8.49951 L 23.4999 22.4995 C 23.4999 23.0518 23.0522 23.4995 22.4999 23.4995 L 8.49988 23.4995 C 7.94759 23.4995 7.49988 23.0518 7.49988 22.4995 L 7.49988 18.5" stroke-linecap="round" />
+                </g>
+                <g transform="matrix(1 0 0 1 -3.5 -3.5)" >
+                <path style="stroke: rgb(0,0,0); stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: round; stroke-miterlimit: 4; fill: none; fill-rule: nonzero; opacity: 1;" transform=" translate(-8.5, -8.5)" d="M 0.499901 1.50049 C 0.499901 0.948203 0.947616 0.500488 1.4999 0.500488 L 15.4999 0.500488 C 16.0522 0.500488 16.4999 0.948204 16.4999 1.50049 L 16.4999 15.5005 C 16.4999 16.0528 16.0522 16.5005 15.4999 16.5005 L 1.4999 16.5005 C 0.947615 16.5005 0.499901 16.0528 0.499901 15.5005 L 0.499901 1.50049 Z" stroke-linecap="round" />
+                </g>
+                </g>
+                </g>
+                </svg>
+              </button>
+
               <textarea class="desc-input w-full border p-3 rounded-lg mb-1">${description}</textarea>
+              
               <span class="tag relative group desc-tag ${tagColor(descPx <= 1000)}"></span>
             </div>
           `;
@@ -209,6 +253,13 @@
 
           updateMetrics(titleInput, titleTag, { px: 560, chars: 70, words: 10 });
           updateMetrics(descInput, descTag, { px: 1000, chars: 160, words: 24 });
+
+          const copyTitleBtn = card.querySelector('.copy-title');
+          const copyDescBtn = card.querySelector('.copy-desc');
+
+          copyTitleBtn.addEventListener('click', () => copyToClipboard(titleInput.value));
+          copyDescBtn.addEventListener('click', () => copyToClipboard(descInput.value));
+
 
           collected.push({ url, description });
           completed++;
@@ -244,7 +295,7 @@
     });
 
       
-  document.getElementById('exportCSV').addEventListener('click', () => {
+    document.getElementById('exportCSV').addEventListener('click', () => {
     const history = JSON.parse(localStorage.getItem('metaDescriptions') || '[]');
     if (!history.length) return;
 
