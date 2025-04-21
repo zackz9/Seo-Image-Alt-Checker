@@ -62,11 +62,16 @@
 
     <input id="urlInput" type="text" placeholder="Entrez une URL..." class="w-full p-4 mb-4 rounded-lg border border-gray-300 bg-white shadow-sm focus:ring focus:ring-blue-100">
     <textarea id="urlTextarea" placeholder="Collez plusieurs URLs (une par ligne)" rows="5" class="w-full p-4 mb-4 rounded-lg border border-gray-300 bg-white shadow-sm hidden"></textarea>
+    <p id="urlCount" class="text-sm text-gray-500 mb-4 hidden">0 / 30 URLs</p>
 
     <div class="flex flex-wrap gap-4 mb-4">
       <button id="checkBtn" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition">🔎 Analyser</button>
       <button id="resetHistory" class="bg-gray-200 text-gray-800 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition">♻️ Réinitialiser</button>
       <button id="exportCSV" class="bg-green-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-green-700 transition" disabled>⬇️ Export CSV</button>
+    </div>
+
+    <div class="w-full bg-gray-200 rounded-full h-2.5">
+      <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style="width: 0%;"></div>
     </div>
 
     <div id="results" class="space-y-6"></div>
@@ -77,9 +82,7 @@
   </svg>
   <span id="loader-text">Analyse en cours...</span>
 </div>
-<div class="w-full bg-gray-200 rounded-full h-2.5">
-  <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style="width: 0%;"></div>
-</div>
+
 </div>
 <script>
     const modeRadios = document.getElementsByName('mode');
@@ -87,6 +90,14 @@
     const urlTextarea = document.getElementById('urlTextarea');
     const resultsDiv = document.getElementById('results');
     const exportBtn = document.getElementById('exportCSV');
+
+    const urlCount = document.getElementById('urlCount');
+    urlTextarea.addEventListener('input', () => {
+      const lines = urlTextarea.value.split('\n').filter(line => line.trim() !== '');
+      urlCount.textContent = `${lines.length} / 30 URLs`;
+      urlCount.classList.toggle('text-red-500', lines.length > 30);
+    });
+
 
     modeRadios.forEach(radio => {
       radio.addEventListener('change', () => {
@@ -118,11 +129,26 @@
 
     document.getElementById('checkBtn').addEventListener('click', async () => {
       const mode = document.querySelector('input[name="mode"]:checked').value;
-      const urls = mode === 'single' ? [urlInput.value.trim()] : urlTextarea.value.split('').map(u => u.trim()).filter(Boolean);
+      const urls = mode === 'single'
+        ? [urlInput.value.trim()]
+        : urlTextarea.value.split('\n').map(u => u.trim()).filter(Boolean);
+
       if (!urls.length || urls[0] === '') {
         Toastify({ text: "❌ Veuillez entrer au moins une URL.", duration: 3000, gravity: 'top', position: 'center', style: { background: '#f87171' } }).showToast();
         return;
       }
+
+      if (urls.length > 30) {
+        Toastify({
+          text: "⚠️ Veuillez limiter à 30 URLs maximum pour un traitement optimal.",
+          duration: 4000,
+          gravity: 'top',
+          position: 'center',
+          style: { background: "#f97316" }
+        }).showToast();
+        return;
+      }
+
       const loader = document.getElementById('loader');
       const loaderText = document.getElementById('loader-text');
       const progressBar = document.getElementById('progressBar');
