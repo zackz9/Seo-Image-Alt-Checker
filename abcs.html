@@ -1,0 +1,93 @@
+<!-- Code HTML mis à jour avec fetch no-cors -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SEO Meta Description Checker</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8f9fa;
+      color: #1f2937;
+    }
+    .preview-box {
+      background-color: #ffffff;
+      border-radius: 1rem;
+      padding: 2rem;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+      transition: 0.3s ease;
+    }
+    .google-title {
+      color: #1a0dab;
+      font-size: 20px;
+      font-weight: 600;
+    }
+    .google-url {
+      color: #198754;
+      font-size: 14px;
+      margin-bottom: 2px;
+    }
+    .google-desc {
+      font-size: 15px;
+      color: #4b5563;
+      margin-top: 4px;
+    }
+    .tag {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 500;
+      display: inline-block;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body class="min-h-screen py-10 px-6">
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-4xl font-semibold mb-8 text-gray-900">🧠 Meta Description Intelligence</h1>
+
+    <div class="flex gap-6 mb-6 items-center">
+      <label class="flex items-center gap-2 text-sm font-medium">
+        <input type="radio" name="mode" value="single" checked class="accent-blue-600"> Single URL
+      </label>
+      <label class="flex items-center gap-2 text-sm font-medium">
+        <input type="radio" name="mode" value="batch" class="accent-blue-600"> Batch URLs
+      </label>
+    </div>
+
+    <input id="urlInput" type="text" placeholder="Entrez une URL..." class="w-full p-4 mb-4 rounded-lg border border-gray-300 bg-white shadow-sm focus:ring focus:ring-blue-100">
+    <textarea id="urlTextarea" placeholder="Collez plusieurs URLs (une par ligne)" rows="5" class="w-full p-4 mb-4 rounded-lg border border-gray-300 bg-white shadow-sm hidden"></textarea>
+
+    <div class="flex flex-wrap gap-4 mb-4">
+      <button id="checkBtn" class="bg-blue-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-blue-700 transition">🔎 Analyser</button>
+      <button id="resetHistory" class="bg-gray-200 text-gray-800 px-6 py-2.5 rounded-lg font-medium hover:bg-gray-300 transition">♻️ Réinitialiser</button>
+      <button id="exportCSV" class="bg-green-600 text-white px-6 py-2.5 rounded-lg font-medium hover:bg-green-700 transition" disabled>⬇️ Export CSV</button>
+    </div>
+
+    <div id="results" class="space-y-6"></div>
+    <div id="loader" class="flex flex-col gap-2 text-sm text-gray-500 mt-4 mb-6 hidden">
+      <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      <span id="loader-text">Analyse en cours...</span>
+    </div>
+    <div class="w-full bg-gray-200 rounded-full h-2.5">
+      <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style="width: 0%;"></div>
+    </div>
+  </div>
+  <script>
+    // Le fetch allorigins est remplacé ici :
+    const fetchHTML = async (url) => {
+      const response = await fetch(url, { mode: 'no-cors' });
+      const text = await response.text?.();
+      return new DOMParser().parseFromString(text || '', 'text/html');
+    };
+  </script>
+</body>
+</html>
